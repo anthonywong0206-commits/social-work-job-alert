@@ -1,0 +1,39 @@
+name: Hong Kong Social Work Job Search
+
+on:
+  schedule:
+    # GitHub Actions uses UTC. 10:00 UTC = 18:00 Hong Kong time.
+    - cron: "0 10 * * 1-5"
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Print result without sending Telegram"
+        required: true
+        default: "false"
+        type: choice
+        options:
+          - "false"
+          - "true"
+
+jobs:
+  search-and-notify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Search jobs and notify Telegram
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          DRY_RUN: ${{ github.event.inputs.dry_run == 'true' && '1' || '0' }}
+        run: python job_search.py
